@@ -1,1 +1,0 @@
-# cg_assignment_2_boilerplate

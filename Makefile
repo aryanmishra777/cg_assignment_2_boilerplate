@@ -1,49 +1,46 @@
-# Get the OS type
-UNAME := $(shell uname)
-
-# Define the compiler and the flags
 CC = g++
-RM = /bin/rm -rf
-CFLAGS = -O3 -Wall -g -std=c++11
+CFLAGS = -std=c++17 -Wall -Wextra
+LDFLAGS = -lglfw -lGL -ldl
 
-IMGUI_DIR = ./include/imgui
+# Include paths
+INCLUDES = -I./src -I./lib -I./lib/imgui -I./lib/imgui/backends -I./lib/glad/include
 
-# Linux specific flags
-ifeq ($(UNAME), Linux)
-	INCDIRS = -I. -I./include -I${IMGUI_DIR}
-	LIBDIRS = -L.
-	LIBS = -lGL -lGLEW -lm -lglfw
-endif
+# Source files
+SOURCES = src/main.cpp \
+          glad/glad.c \
+          imgui/imgui.cpp \
+          imgui/imgui_draw.cpp \
+          imgui/imgui_tables.cpp \
+          imgui/imgui_widgets.cpp \
+          imgui/imgui_demo.cpp \
+          imgui/backends/imgui_impl_glfw.cpp \
+          imgui/backends/imgui_impl_opengl3.cpp
 
-# Mac OS X specific flags
-ifeq ($(UNAME), Darwin)
-	INCDIRS = -I/opt/homebrew/Cellar/glew/2.2.0_1/include -I/opt/homebrew/Cellar/glfw/3.4/include -I./include -I${IMGUI_DIR}
-	LIBDIRS = -L. -L/usr/local/lib -L/opt/homebrew/Cellar/glew/2.2.0_1/lib -L/opt/homebrew/Cellar/glfw/3.4/lib
-	LIBS = -framework OpenGL -lGLEW -lglfw
-endif
+# Object files
+OBJECTS = $(SOURCES:.cpp=.o)
+OBJECTS := $(OBJECTS:.c=.o)
 
-# Define the target
-BIN = sample
+# Target executable
+TARGET = mesh_viewer
 
-# Define the source files
-SRCS = main.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp ${IMGUI_DIR}/imgui_widgets.cpp ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
-# Define the object files
-OBJS = $(SRCS:.cpp=.o)
+all: $(TARGET)
 
-# Define the rules
-${BIN} : ${OBJS}
-	${CC} ${OBJS} ${LIBDIRS} ${LIBS} -o $@ 
-.cpp.o :
-	${CC} ${CFLAGS} ${INCDIRS} -c $< -o $@
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	@echo "Build successful! Run with: ./$(TARGET) <mesh_file.off>"
 
-.PHONY : clean remake
-# Clean up the directory
-clean :
-	${RM} ${BIN}
-	${RM} ${OBJS}
+%.o: %.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-remake : clean ${BIN}
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-# Generate the dependencies
-depend:
-	makedepend -- $(CFLAGS) -- -Y $(SRCS)
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+.PHONY: all clean
+
+# Copy shaders to working directory (if needed)
+copy_resources:
+	cp -r shaders .
+	cp -r models .
